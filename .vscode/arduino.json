@@ -1,0 +1,6 @@
+{
+    "sketch": "bedside_clock_-_7_segment.ino",
+    "board": "arduino:avr:leonardo",
+    "programmer": "AVR ISP",
+    "port": "COM14"
+}
