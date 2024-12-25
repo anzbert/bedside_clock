@@ -1,6 +1,6 @@
 {
-    "sketch": "bedside_clock_-_7_segment.ino",
+    "sketch": "bedside_clock.ino",
     "board": "arduino:avr:leonardo",
     "programmer": "AVR ISP",
-    "port": "COM14"
+    "port": "/dev/tty.usbmodem101"
 }

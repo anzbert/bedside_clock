@@ -20,17 +20,17 @@ int foldersAndFiles[MAXFOLDERS] = {};
 #define MAXBRIGHTNESS 3
 TM1637 display(CLK, DIO);
 
-byte displayArray[4] = {0, 0, 0, 0}; // 4 digits array for display
-int brightness;                      // working variable (supported range is 0-7)
-byte tempBrightCountdown = 0;        // brightness Countdown on snoozepress
+int8_t displayArray[4] = {0, 0, 0, 0}; // 4 digits array for display
+int brightness;                        // working variable (supported range is 0-7)
+byte tempBrightCountdown = 0;          // brightness Countdown on snoozepress
 boolean clockPoints;
 
 // menu labels
-const char volMenu[] = "vo";
-const char sndMenu[] = "sd";
-const char sdfMenu[] = "sf";
-const char brtMenu[] = "brt";
-const char snzMenu[] = "sn";
+char volMenu[] = "vo";
+char sndMenu[] = "sd";
+char sdfMenu[] = "sf";
+char brtMenu[] = "brt";
+char snzMenu[] = "sn";
 
 byte timeOut = 0;
 const byte timeOutDefault = 20; // default timeout time in seconds
@@ -45,8 +45,10 @@ boolean swapEveryFractionSecond;
 // RTC DS1307 (I2C)
 // https://github.com/Seeed-Studio/RTC_DS1307
 #include <Wire.h> // for I2C communication
-#include "DS1307.h"
-DS1307 clock; //define an object of DS1307 class
+#include <DS3231.h>
+DS3231 rtc; // define an object of DS1307 class
+bool h12Flag;
+bool pmFlag;
 
 // ENCODER
 // https://github.com/mprograms/SimpleRotary
@@ -313,9 +315,6 @@ void setup()
   display.set(brightness); // Brightness 0-7 (default 2)
   display.init();          // actually the same as display.clearDisplay();
 
-  // RTC Module
-  clock.begin(); // starts wire.h library
-
   // INIT ALL BUTTONS
   pinMode(SWITCHTGL, INPUT);           // no PULLUP because using external 10K PULL DOWN resistor
   toggleSwitch.attach(SWITCHTGL);      // debounce library init
@@ -353,6 +352,10 @@ void setup()
       snoozeButton.update();
     }
   }
+
+  // I2C Communication to RTC Clock
+  Wire.begin();            // Start the I2C interface via the wire.h library
+  rtc.setClockMode(false); // set to 24h
 }
 
 ////////////////////////////////////////////
@@ -365,11 +368,10 @@ void loop()
   // mode independant code:
 
   // UPDATE RTC TIMER
-  clock.getTime();
-  if (clock.second != prevSecond)
+  if (rtc.getSecond() != prevSecond)
   {
-    runOncePerSecond = true;   // to let other routines know that a second has passed
-    prevSecond = clock.second; // set up for next second check
+    runOncePerSecond = true;      // to let other routines know that a second has passed
+    prevSecond = rtc.getSecond(); // set up for next second check
   }
 
   // UPDATE FRACTION TIMER
@@ -384,7 +386,7 @@ void loop()
   // in RANDOM mode, fire next track, if necessary
   if (runOncePerSecond == true)
   {
-    if ((clock.second % 5) == 0 && alarmTriggered == true && clockSetting[SOUND] == RANDOM)
+    if ((rtc.getSecond() % 5) == 0 && alarmTriggered == true && clockSetting[SOUND] == RANDOM)
     {
       int queryPlay = mp3.isPlaying();
       if (queryPlay != 1)
@@ -415,9 +417,9 @@ void loop()
   // CHECK IF ALARM NEEDS TO BE TRIGGERED once per minute
   if (alarmArmed == 1 && runOncePerSecond == true)
   {
-    if (clock.second == 0) // which is true once per minute
+    if (rtc.getSecond() == 0) // which is true once per minute
     {
-      if (clock.hour == clockSetting[ALARMHOURS] && clock.minute == clockSetting[ALARMMINUTES])
+      if (rtc.getHour(h12Flag, pmFlag) == clockSetting[ALARMHOURS] && rtc.getMinute() == clockSetting[ALARMMINUTES])
       {
         mode = BASE;          // back to BASE when alarm is Triggered
         stopAndResetVolume(); // reset for playback
@@ -434,12 +436,12 @@ void loop()
         alarmTriggered = true;
 
         // set alarm timeout in 'alarmTimeout' minutes:
-        alarmTimeOutHH = clock.hour + ((clock.minute + alarmTimeout) / 60);
+        alarmTimeOutHH = rtc.getHour(h12Flag, pmFlag) + ((rtc.getMinute() + alarmTimeout) / 60);
         if (alarmTimeOutHH > 23)
         {
           alarmTimeOutHH = (alarmTimeOutHH % 24);
         }
-        alarmTimeOutMM = clock.minute + alarmTimeout;
+        alarmTimeOutMM = rtc.getMinute() + alarmTimeout;
         if (alarmTimeOutMM > 59)
         {
           alarmTimeOutMM = (alarmTimeOutMM % 60);
@@ -456,7 +458,7 @@ void loop()
   // ALARM TIMEOUT
   if (alarmTriggered == true && runOncePerSecond == true)
   {
-    if (clock.second == 0 && clock.hour == alarmTimeOutHH && clock.minute == alarmTimeOutMM)
+    if (rtc.getSecond() == 0 && rtc.getHour(h12Flag, pmFlag) == alarmTimeOutHH && rtc.getMinute() == alarmTimeOutMM)
     {
       alarmTriggered = false;
       snoozing = false;
@@ -511,7 +513,7 @@ void loop()
     if (runOncePerSecond == true)
     {
       // UPDATE TIME ARRAY AND DISPLAY TIME
-      updateDisplayArray(clock.hour, clock.minute);
+      updateDisplayArray(rtc.getHour(h12Flag, pmFlag), rtc.getMinute());
 
       // tempBrightCountdown of more than 0 overrides any brightness setting:
       if (tempBrightCountdown > 0)
@@ -523,7 +525,7 @@ void loop()
       }
       else
       {
-        //update display if brightness is not -1 with normal values:
+        // update display if brightness is not -1 with normal values:
         if (brightness >= 0)
         {
           display.set(brightness);
@@ -580,14 +582,14 @@ void loop()
         snoozing = true;
 
         // set new alarm hours:
-        clockSetting[ALARMHOURS] = clock.hour + ((clock.minute + clockSetting[SNZTIME]) / 60);
+        clockSetting[ALARMHOURS] = rtc.getHour(h12Flag, pmFlag) + ((rtc.getMinute() + clockSetting[SNZTIME]) / 60);
         if (clockSetting[ALARMHOURS] > 23)
         {
           clockSetting[ALARMHOURS] = (clockSetting[ALARMHOURS] % 24);
         }
 
         // set new alarm minutes:
-        clockSetting[ALARMMINUTES] = clock.minute + clockSetting[SNZTIME];
+        clockSetting[ALARMMINUTES] = rtc.getMinute() + clockSetting[SNZTIME];
         if (clockSetting[ALARMMINUTES] > 59)
         {
           clockSetting[ALARMMINUTES] = (clockSetting[ALARMMINUTES] % 60);
@@ -669,8 +671,8 @@ void loop()
         if (encoderButton.rose() == true)
         {
           mode = SETTIMEHOURS;
-          tempSetting[ALARMHOURS] = clock.hour; // grab setting to be adjusted in that mode
-          timeOut = timeOutDefault;             // restart timeOUT timer
+          tempSetting[ALARMHOURS] = rtc.getHour(h12Flag, pmFlag); // grab setting to be adjusted in that mode
+          timeOut = timeOutDefault;                               // restart timeOUT timer
         }
       }
     }
@@ -1081,7 +1083,7 @@ void loop()
     ////////////////// @note SET TIME
   case SETTIMEHOURS:
     tempSetting[ALARMHOURS] = rotateValue(tempSetting[ALARMHOURS], 0, 23);
-    updateDisplayArray(tempSetting[ALARMHOURS], clock.minute); // update time data array with latest time
+    updateDisplayArray(tempSetting[ALARMHOURS], rtc.getMinute()); // update time data array with latest time
     display.point(POINT_ON);
 
     // flash 2 digits and points:
@@ -1108,7 +1110,7 @@ void loop()
     if (encoderButton.rose() == true)
     {
       mode = SETTIMEMINUTES;
-      tempSetting[ALARMMINUTES] = clock.minute;
+      tempSetting[ALARMMINUTES] = rtc.getMinute();
       timeOut = timeOutDefault;
     }
     break;
@@ -1142,8 +1144,10 @@ void loop()
     if (encoderButton.rose() == true)
     {
       // save time to RTC:
-      clock.fillByHMS(tempSetting[ALARMHOURS], tempSetting[ALARMMINUTES], 00); // set time
-      clock.setTime();                                                         // write time to the RTC chip
+      rtc.setHour(tempSetting[ALARMHOURS]);
+      rtc.setMinute(tempSetting[ALARMMINUTES]);
+      rtc.setSecond(0);
+
       mode = BASE;
     }
 
@@ -1157,7 +1161,7 @@ void loop()
     tempSetting[EQSELECT] = rotateValue(tempSetting[EQSELECT], 0, 5);
     display.point(POINT_OFF);
 
-    //flash digits :
+    // flash digits :
     if (runOncePerFractionSecond == true)
     {
       if (swapEveryFractionSecond == true)
