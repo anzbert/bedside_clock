@@ -1,8 +1,9 @@
 // DFPlayer
 // https://github.com/PowerBroker2/DFPlayerMini_Fast
-// Classes:
+// Documentation:
 // https://powerbroker2.github.io/DFPlayerMini_Fast/html/class_d_f_player_mini___fast.html
 #include <DFPlayerMini_Fast.h>
+
 #include <SoftwareSerial.h>
 SoftwareSerial mySerial(15, 14); // TX and RX pin
 DFPlayerMini_Fast mp3;
@@ -14,7 +15,10 @@ int foldersAndFiles[MAXFOLDERS] = {};
 
 // DISPLAY
 // https://github.com/Seeed-Studio/Grove_4Digital_Display
+// Had to download this library manually from GitHub to include latest commits and class methods
+// as of december 2024
 #include "TM1637.h"
+
 #define CLK 5
 #define DIO 4
 #define MAXBRIGHTNESS 3
@@ -42,11 +46,12 @@ boolean runOncePerFractionSecond;
 unsigned long lastFractionStart;
 boolean swapEveryFractionSecond;
 
-// RTC DS1307 (I2C)
-// https://github.com/Seeed-Studio/RTC_DS1307
-#include <Wire.h> // for I2C communication
+// RTC DS3231 (I2C)
+// https://github.com/NorthernWidget/DS3231
 #include <DS3231.h>
-DS3231 rtc; // define an object of DS1307 class
+
+#include <Wire.h> // for I2C communication
+DS3231 rtc;       // define an object of DS1307 class
 bool h12Flag;
 bool pmFlag;
 
