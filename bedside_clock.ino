@@ -8,7 +8,7 @@ SoftwareSerial mySerial(15, 14); // TX and RX pin
 DFPlayerMini_Fast mp3;
 #define VOLMODIFIER 13 // add this to the selectable DEFVOL range of 0-9
 
-#define RXTIME 0
+#define RXTIME 5
 #define MAXFOLDERS 20
 int foldersAndFiles[MAXFOLDERS] = {};
 
@@ -277,17 +277,17 @@ void getfoldersAndFiles()
   int fold = mp3.numFolders(); // may be necessary?? investigate!
   delay(RXTIME);
   foldersAndFiles[0] = fold - 1; // for some reason -1 is correct ??
-  // Serial.print("# of Folders: ");
-  // Serial.println(foldersAndFiles[0]);
+  Serial.print("# of Folders: ");
+  Serial.println(foldersAndFiles[0]);
 
   for (int i = 1; i <= foldersAndFiles[0]; i++)
   {
     foldersAndFiles[i] = mp3.numTracksInFolder(i);
     delay(RXTIME);
-    // Serial.print("Folder  ");
-    // Serial.print(i);
-    // Serial.print(" contains: ");
-    // Serial.println(foldersAndFiles[i]);
+    Serial.print("Folder  ");
+    Serial.print(i);
+    Serial.print(" contains: ");
+    Serial.println(foldersAndFiles[i]);
   }
 }
 

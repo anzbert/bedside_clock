@@ -2,5 +2,6 @@
     "sketch": "bedside_clock.ino",
     "board": "arduino:avr:leonardo",
     "programmer": "AVR ISP",
-    "port": "/dev/tty.usbmodem101"
+    "port": "/dev/tty.usbmodem101",
+    "output": "../build/"
 }
