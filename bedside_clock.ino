@@ -15,8 +15,6 @@ int foldersAndFiles[MAXFOLDERS] = {};
 
 // DISPLAY
 // https://github.com/Seeed-Studio/Grove_4Digital_Display
-// Had to download this library manually from GitHub to include latest commits and class methods
-// as of december 2024
 #include "TM1637.h"
 
 #define CLK 5
