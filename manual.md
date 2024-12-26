@@ -29,7 +29,7 @@
 2. Press the Snooze Button to move to the Sound selection sub menu. You will see "SF", for Sound Folder, followed by a number indicating the current folder number on the memory card.
 3. Rotate the wheel to select a folder and press the wheel to confirm
 4. You will now see "SD", for Sound, followed by a number indicating the currently selected Sound.
-5. Rotate the wheel to select a Sound. You will hear a preview playing through the speaker. Press the wheel to confirm the new alarm sound or press the Snooze Button to move back and cancel.
+5. Rotate the wheel to select a Sound file by number, or choose "RD" for using random sounds from that folder. You will hear a preview playing through the speaker. Press the wheel to confirm the new alarm sound or press the Snooze Button to move back and cancel.
 
 ### Set the Alarm Volume
 
